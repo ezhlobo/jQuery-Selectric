@@ -9,7 +9,7 @@
  *    /,'
  *   /'
  *
- * Selectric Ϟ v1.8.5 (2014-10-02) - http://lcdsantos.github.io/jQuery-Selectric/
+ * Selectric Ϟ v1.8.5 (2014-12-26) - http://lcdsantos.github.io/jQuery-Selectric/
  *
  * Copyright (c) 2014 Leonardo Santos; Dual licensed: MIT/GPL
  *
@@ -37,6 +37,7 @@
           postfixes: classList,
           camelCase: true
         },
+        optionsTextBuilder: '{text}', // function(text)
         optionsItemBuilder: '{text}' // function(itemData, element, index)
       },
       hooks = {
@@ -174,6 +175,8 @@
               _$li = '<ul>',
               selectedIndex = $options.filter(':selected').index();
 
+          var textBuilder = _this.options.optionsTextBuilder;
+
           currValue = (selected = ~selectedIndex ? selectedIndex : 0);
 
           if ( optionsLength = $options.length ) {
@@ -193,13 +196,19 @@
 
               _$li += _utils.format('<li class="{1}">{2}</li>',
                 $.trim([i == currValue ? 'selected' : '', i == optionsLength - 1 ? 'last' : '', selectDisabled ? 'disabled' : ''].join(' ')),
-                $.isFunction(itemBuilder) ? itemBuilder(_this.items[i], $elm, i) : _utils.format(itemBuilder, _this.items[i])
+                // $.isFunction(itemBuilder) ? itemBuilder(_this.items[i], $elm, i) : _utils.format(itemBuilder, _this.items[i])
+                $.isFunction(textBuilder) ? textBuilder(_this.items[i].text) : _utils.format(textBuilder, _this.items[i])
               );
             });
 
             $items.append( $itemsScroll.html(_$li + '</ul>') );
 
-            $label.html(_this.items[currValue].text);
+            var _text = _this.items[currValue].text;
+            _text = _utils.format('{1}',
+                $.isFunction(textBuilder) ? textBuilder(_text) : _utils.format(textBuilder, _text)
+            );
+
+            $label.html(_text);
           }
 
           $wrapper.add($original).add($outerWrapper).add($input).off(bindSufix);
@@ -413,8 +422,15 @@
               .prop('selectedIndex', currValue = selected)
               .data('value', text);
 
+            // Prepare label text
+            var textBuilder = _this.options.optionsTextBuilder;
+            var _text = text;
+            _text = _utils.format('{1}',
+                $.isFunction(textBuilder) ? textBuilder(_text) : _utils.format(textBuilder, _text)
+            );
+
             // Change label text
-            $label.html(text);
+            $label.html(_text);
 
             _utils.triggerCallback('Change', _this);
           }
@@ -433,10 +449,10 @@
         // Select option
         function _select(index, close) {
           // If element is disabled, can't select it
-          if ( !_this.items[index].disabled ){
+          if ( !_this.items[selected = index].disabled ){
             // If 'close' is false (default), the options box won't close after
             // each selected item, this is necessary for keyboard navigation
-            $li.removeClass('selected').eq(selected = index).addClass('selected');
+            $li.removeClass('selected').eq(index).addClass('selected');
             _detectItemVisibility(index);
             close && _close();
           }
